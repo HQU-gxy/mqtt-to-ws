@@ -50,6 +50,7 @@ func main() {
 		return
 	}
 
+	// gMQTT server
 	s := server.New(
 		server.WithTCPListener(ln),
 		server.WithHook(hooks),
@@ -70,7 +71,8 @@ func main() {
 		flag.Parse()
 		hub := newHub(mqttToWs)
 		go hub.run()
-		r := gin.Default()
+		// r := gin.Default()
+		r := gin.New()
 		r.Use(ginzap.Ginzap(l, time.RFC3339, true))
 		r.Use(ginzap.RecoveryWithZap(l, true))
 		r.GET("/ws", func(c *gin.Context) {
@@ -79,6 +81,7 @@ func main() {
 		r.Run(*addr)
 	}()
 
+	// gMQTT server
 	err = s.Run()
 	if err != nil {
 		panic(err)
