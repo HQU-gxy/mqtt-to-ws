@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -24,10 +25,27 @@ type MQTTMsg struct {
 	Payload string `json:"payload"`
 }
 
+func (m *MQTTMsg) ToRecord() (MQTTRecord, error) {
+	payload, err := strconv.ParseFloat(m.Payload, 32)
+	return MQTTRecord{
+		Payload:   payload,
+		Timestamp: time.Now(),
+	}, err
+}
+
+const (
+	dbHost = "127.0.0.1"
+	dbPort = "27017"
+	dbName = "mqtt"
+)
+
 var addr = flag.String("addr", "localhost:8080", "http service address")
 var l, _ = zap.NewDevelopment()
 var lsugar = l.Sugar()
-var mqttToWs = make(chan MQTTMsg)
+var (
+	mqttToWs = make(chan MQTTMsg)
+	mqttToDb = make(chan MQTTMsg)
+)
 
 var onMsgArrived server.OnMsgArrived = func(ctx context.Context, client server.Client, req *server.MsgArrivedRequest) error {
 	// spew.Dump(req)
@@ -36,6 +54,7 @@ var onMsgArrived server.OnMsgArrived = func(ctx context.Context, client server.C
 		Payload: string(req.Publish.Payload),
 	}
 	mqttToWs <- mqttMsg
+	mqttToDb <- mqttMsg
 	return nil
 }
 
@@ -49,6 +68,7 @@ func main() {
 		lsugar.Error(err.Error())
 		return
 	}
+	db := GetDB(dbHost, dbPort, dbName)
 
 	// gMQTT server
 	s := server.New(
@@ -57,6 +77,31 @@ func main() {
 		server.WithLogger(l),
 		server.WithConfig(config.DefaultConfig()),
 	)
+
+	go func() {
+		for {
+			msg := <-mqttToDb
+			switch msg.Topic {
+			case "temperature":
+				val, err := msg.ToRecord()
+				if err != nil {
+					lsugar.Error(err)
+					break
+					// Prevent the execution of the following code
+				}
+				CreateRecord(db, "temperature", val)
+			case "humidity":
+				val, err := msg.ToRecord()
+				if err != nil {
+					lsugar.Error(err)
+					break
+				}
+				CreateRecord(db, "humidity", val)
+			default:
+				// ignore
+			}
+		}
+	}()
 
 	// I have totally no idea what this is for
 	// 等待中断信号以优雅地关闭服务器
@@ -67,6 +112,7 @@ func main() {
 		s.Stop(context.Background())
 	}()
 
+	// gin server
 	go func() {
 		flag.Parse()
 		hub := newHub(mqttToWs)
@@ -77,6 +123,22 @@ func main() {
 		r.Use(ginzap.RecoveryWithZap(l, true))
 		r.GET("/ws", func(c *gin.Context) {
 			serveWs(hub, c.Writer, c.Request)
+		})
+		r.GET("/temperature", func(c *gin.Context) {
+			pageUnparsed := c.DefaultQuery("page", "1")
+			page, err := strconv.Atoi(pageUnparsed)
+			if err != nil {
+				lsugar.Error(err.Error())
+				c.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+				return
+			}
+			records, err := GetRecordsByPage(db, "temperature", int64(page))
+			if err != nil {
+				lsugar.Error(err.Error())
+				c.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+				return
+			}
+			c.JSON(200, gin.H{"records": records})
 		})
 		r.Run(*addr)
 	}()
