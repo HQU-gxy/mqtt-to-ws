@@ -26,7 +26,8 @@ const (
 	dbName = "mqtt"
 )
 
-var addr = flag.String("addr", "localhost:8080", "http service address")
+// https://stackoverflow.com/questions/1714236/getopt-like-behavior-in-go
+var addr = flag.String("addr", ":8080", "http service address")
 var l, _ = zap.NewDevelopment()
 var lsugar = l.Sugar()
 var (
@@ -66,6 +67,7 @@ func handleQueryByPage(c *gin.Context, collection string, db *mongo.Database) {
 		c.JSON(200, gin.H{"records": empty})
 		return
 	}
+	// RFC3339 is the format of "timestamp"
 	c.JSON(200, gin.H{"records": records})
 }
 
@@ -76,10 +78,16 @@ var hooks = server.Hooks{
 func main() {
 	ln, err := net.Listen("tcp", ":1883")
 	if err != nil {
-		lsugar.Error(err.Error())
+		lsugar.Fatal(err.Error())
 		return
 	}
-	db := GetDB(dbHost, dbPort, dbName)
+	connectionURI := "mongodb://" + dbHost + ":" + dbPort + "/"
+	db, err := GetDB(connectionURI, dbName)
+	// https://stackoverflow.com/questions/42770022/should-err-error-be-used-in-string-formatting
+	if err != nil {
+		lsugar.Fatal(err.Error())
+		return
+	}
 
 	// gMQTT server
 	s := server.New(

@@ -36,20 +36,21 @@ type MQTTRecord struct {
 	Timestamp time.Time `bson:"timestamp" json:"timestamp"`
 }
 
-func GetDB(host string, port string, db string) *mongo.Database {
-	connectionURI := "mongodb://" + host + ":" + port + "/"
-	clientOptions := options.Client().ApplyURI(connectionURI)
+func GetDB(uri string, db string) (*mongo.Database, error) {
+	clientOptions := options.Client().ApplyURI(uri)
 	client, err := mongo.Connect(Ctx, clientOptions)
 	if err != nil {
 		lsugar.Error(err)
+		return nil, err
 	}
 
 	err = client.Ping(Ctx, nil)
 	if err != nil {
 		lsugar.Error(err)
+		return nil, err
 	}
 
-	return client.Database(db)
+	return client.Database(db), err
 }
 
 func CreateRecord(db *mongo.Database, collection string, data MQTTRecord) error {
