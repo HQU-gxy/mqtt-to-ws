@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -12,6 +13,23 @@ import (
 var (
 	Ctx = context.TODO()
 )
+
+const (
+	recordPerPage = 10
+)
+
+type MQTTMsg struct {
+	Topic   string `json:"topic"`
+	Payload string `json:"payload"`
+}
+
+func (m *MQTTMsg) ToRecord() (MQTTRecord, error) {
+	payload, err := strconv.ParseFloat(m.Payload, 32)
+	return MQTTRecord{
+		Payload:   payload,
+		Timestamp: time.Now(),
+	}, err
+}
 
 type MQTTRecord struct {
 	Payload   float64   `bson:"payload" json:"payload"`
@@ -53,8 +71,8 @@ func GetRecords(db *mongo.Database, collection string, start time.Time, end time
 	}
 
 	options := options.Find()
-	options.SetLimit(10)
-	options.SetSkip(10 * (page - 1))
+	options.SetLimit(recordPerPage)
+	options.SetSkip(recordPerPage * (page - 1))
 
 	cur, err := db.Collection(collection).Find(Ctx, filter, options)
 	if err != nil {
@@ -79,8 +97,8 @@ func GetRecords(db *mongo.Database, collection string, start time.Time, end time
 
 func GetRecordsByPage(db *mongo.Database, collection string, page int64) ([]MQTTRecord, error) {
 	options := options.Find()
-	options.SetLimit(10)
-	options.SetSkip(10 * (page - 1))
+	options.SetLimit(recordPerPage)
+	options.SetSkip(recordPerPage * (page - 1))
 
 	cur, err := db.Collection(collection).Find(Ctx, bson.D{}, options)
 	if err != nil {

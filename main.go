@@ -16,22 +16,9 @@ import (
 	_ "github.com/DrmagicE/gmqtt/topicalias/fifo"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
-	_ "go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
 )
-
-type MQTTMsg struct {
-	Topic   string `json:"topic"`
-	Payload string `json:"payload"`
-}
-
-func (m *MQTTMsg) ToRecord() (MQTTRecord, error) {
-	payload, err := strconv.ParseFloat(m.Payload, 32)
-	return MQTTRecord{
-		Payload:   payload,
-		Timestamp: time.Now(),
-	}, err
-}
 
 const (
 	dbHost = "127.0.0.1"
@@ -58,6 +45,30 @@ var onMsgArrived server.OnMsgArrived = func(ctx context.Context, client server.C
 	return nil
 }
 
+func handleQueryByPage(c *gin.Context, collection string, db *mongo.Database) {
+	pageUnparsed := c.DefaultQuery("page", "1")
+	page, err := strconv.Atoi(pageUnparsed)
+	if err != nil {
+		lsugar.Error(err.Error())
+		c.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	records, err := GetRecordsByPage(db, collection, int64(page))
+	if err != nil {
+		lsugar.Error(err.Error())
+		c.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	if records == nil {
+		// a trick to return empty array
+		// https://stackoverflow.com/questions/56200925/return-an-empty-array-instead-of-null-with-golang-for-json-return-with-gin
+		var empty = make([]string, 0)
+		c.JSON(200, gin.H{"records": empty})
+		return
+	}
+	c.JSON(200, gin.H{"records": records})
+}
+
 var hooks = server.Hooks{
 	OnMsgArrived: onMsgArrived,
 }
@@ -78,6 +89,7 @@ func main() {
 		server.WithConfig(config.DefaultConfig()),
 	)
 
+	// handle MongoDB message
 	go func() {
 		for {
 			msg := <-mqttToDb
@@ -125,20 +137,10 @@ func main() {
 			serveWs(hub, c.Writer, c.Request)
 		})
 		r.GET("/temperature", func(c *gin.Context) {
-			pageUnparsed := c.DefaultQuery("page", "1")
-			page, err := strconv.Atoi(pageUnparsed)
-			if err != nil {
-				lsugar.Error(err.Error())
-				c.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
-				return
-			}
-			records, err := GetRecordsByPage(db, "temperature", int64(page))
-			if err != nil {
-				lsugar.Error(err.Error())
-				c.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
-				return
-			}
-			c.JSON(200, gin.H{"records": records})
+			handleQueryByPage(c, "temperature", db)
+		})
+		r.GET("/humidity", func(c *gin.Context) {
+			handleQueryByPage(c, "humidity", db)
 		})
 		r.Run(*addr)
 	}()
