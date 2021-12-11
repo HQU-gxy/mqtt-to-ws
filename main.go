@@ -4,15 +4,18 @@ import (
 	"context"
 	"flag"
 	"net"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/DrmagicE/gmqtt/config"
 	_ "github.com/DrmagicE/gmqtt/persistence"
 	"github.com/DrmagicE/gmqtt/server"
 	_ "github.com/DrmagicE/gmqtt/topicalias/fifo"
+	ginzap "github.com/gin-contrib/zap"
+	"github.com/gin-gonic/gin"
+	_ "go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
 )
 
@@ -55,6 +58,7 @@ func main() {
 	)
 
 	// I have totally no idea what this is for
+	// 等待中断信号以优雅地关闭服务器
 	go func() {
 		signalCh := make(chan os.Signal, 1)
 		signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
@@ -66,10 +70,13 @@ func main() {
 		flag.Parse()
 		hub := newHub(mqttToWs)
 		go hub.run()
-		http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-			serveWs(hub, w, r)
+		r := gin.Default()
+		r.Use(ginzap.Ginzap(l, time.RFC3339, true))
+		r.Use(ginzap.RecoveryWithZap(l, true))
+		r.GET("/ws", func(c *gin.Context) {
+			serveWs(hub, c.Writer, c.Request)
 		})
-		http.ListenAndServe(*addr, nil)
+		r.Run(*addr)
 	}()
 
 	err = s.Run()

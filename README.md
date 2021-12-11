@@ -1,3 +1,6 @@
 # MQTT to Websocket (Oneway)
 
-Todo: makefile
+Todo:
+
+- makefile
+- config file
