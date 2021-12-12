@@ -15,8 +15,11 @@ import (
 	_ "github.com/DrmagicE/gmqtt/persistence"
 	"github.com/DrmagicE/gmqtt/server"
 	_ "github.com/DrmagicE/gmqtt/topicalias/fifo"
+	docs "github.com/crosstyan/mqtt-to-ws/docs"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
 )
@@ -135,12 +138,29 @@ var hooks = server.Hooks{
 	OnMsgArrived: onMsgArrived,
 }
 
+// @title           Swagger Example API
+// @version         1.0
+// @description     This is a sample server celler server.
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   API Support
+// @contact.url    http://www.swagger.io/support
+// @contact.email  support@swagger.io
+
+// @license.name  WTFPL
+// @license.url   http://www.wtfpl.net/
+
+// @host      localhost:8080
+// @BasePath  /
+
+// @securityDefinitions.basic  BasicAuth
 func main() {
 	ln, err := net.Listen("tcp", ":1883")
 	if err != nil {
 		lsugar.Fatal(err.Error())
 		return
 	}
+	docs.SwaggerInfo.Host = *addr
 	connectionURI := "mongodb://" + dbHost + ":" + dbPort + "/"
 	db, err := GetDB(connectionURI, dbName)
 	// https://stackoverflow.com/questions/42770022/should-err-error-be-used-in-string-formatting
@@ -204,6 +224,7 @@ func main() {
 		r.GET("/ws", func(c *gin.Context) {
 			serveWs(hub, c.Writer, c.Request)
 		})
+
 		r.GET("/temperature", func(c *gin.Context) {
 			handleQueryByPage(c, "temperature", db)
 		})
@@ -216,6 +237,7 @@ func main() {
 		r.POST("/humidity", func(c *gin.Context) {
 			handleQuery(c, "humidity", db)
 		})
+		r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 		r.Run(*addr)
 	}()
 
