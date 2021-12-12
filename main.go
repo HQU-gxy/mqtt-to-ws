@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -46,29 +47,88 @@ var onMsgArrived server.OnMsgArrived = func(ctx context.Context, client server.C
 	return nil
 }
 
+type DateRangeRequest struct {
+	Page  *int64  `json:"page"`
+	Start *string `json:"start"`
+	End   *string `json:"end,omitempty"`
+}
+
+func handleQuery(c *gin.Context, collection string, db *mongo.Database) {
+	var dateRange DateRangeRequest
+	c.BindJSON(&dateRange)
+	var page int64
+	if dateRange.Page == nil || *dateRange.Page <= 0 {
+		page = 1
+	} else {
+		page = *dateRange.Page
+	}
+	var tEnd time.Time
+	var tStart time.Time
+	tStart, err := time.Parse(time.RFC3339, *dateRange.Start)
+	if err != nil {
+		lsugar.Error(err)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	// TODO: Refactor this part
+	if dateRange.End != nil {
+		tEnd, err = time.Parse(time.RFC3339, *dateRange.End)
+		if err != nil {
+			lsugar.Error(err)
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		records, err := GetRecordsBetween(db, collection, tStart, tEnd, page)
+		if err != nil {
+			lsugar.Error(err)
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		if records == nil {
+			var empty = make([]string, 0)
+			c.JSON(http.StatusOK, gin.H{"records": empty})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"records": records})
+	} else {
+		records, err := GetRecordsFrom(db, collection, tStart, page)
+		if err != nil {
+			lsugar.Error(err)
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		if records == nil {
+			var empty = make([]string, 0)
+			c.JSON(http.StatusOK, gin.H{"records": empty})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"records": records})
+	}
+}
+
 func handleQueryByPage(c *gin.Context, collection string, db *mongo.Database) {
 	pageUnparsed := c.DefaultQuery("page", "1")
 	page, err := strconv.Atoi(pageUnparsed)
 	if err != nil {
 		lsugar.Error(err.Error())
-		c.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	records, err := GetRecordsByPage(db, collection, int64(page))
 	if err != nil {
 		lsugar.Error(err.Error())
-		c.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	if records == nil {
 		// a trick to return empty array
 		// https://stackoverflow.com/questions/56200925/return-an-empty-array-instead-of-null-with-golang-for-json-return-with-gin
 		var empty = make([]string, 0)
-		c.JSON(200, gin.H{"records": empty})
+		c.JSON(http.StatusOK, gin.H{"records": empty})
 		return
 	}
 	// RFC3339 is the format of "timestamp"
-	c.JSON(200, gin.H{"records": records})
+	c.JSON(http.StatusOK, gin.H{"records": records})
 }
 
 var hooks = server.Hooks{
@@ -149,6 +209,12 @@ func main() {
 		})
 		r.GET("/humidity", func(c *gin.Context) {
 			handleQueryByPage(c, "humidity", db)
+		})
+		r.POST("/temperature", func(c *gin.Context) {
+			handleQuery(c, "temperature", db)
+		})
+		r.POST("/humidity", func(c *gin.Context) {
+			handleQuery(c, "humidity", db)
 		})
 		r.Run(*addr)
 	}()

@@ -62,20 +62,8 @@ func CreateRecord(db *mongo.Database, collection string, data MQTTRecord) error 
 	return err
 }
 
-func GetRecords(db *mongo.Database, collection string, start time.Time, end time.Time, page int64) ([]MQTTRecord, error) {
-	// https://stackoverflow.com/questions/54548441/composite-literal-uses-unkeyed-fields
-	filter := bson.D{
-		{"timestamp", bson.D{
-			{"$gte", start},
-			{"$lte", end},
-		}},
-	}
-
-	options := options.Find()
-	options.SetLimit(recordPerPage)
-	options.SetSkip(recordPerPage * (page - 1))
-
-	cur, err := db.Collection(collection).Find(Ctx, filter, options)
+func GetRecords(db *mongo.Database, collection string, filter interface{}, opts *options.FindOptions) ([]MQTTRecord, error) {
+	cur, err := db.Collection(collection).Find(Ctx, filter, opts)
 	if err != nil {
 		lsugar.Error(err)
 		return nil, err
@@ -96,28 +84,39 @@ func GetRecords(db *mongo.Database, collection string, start time.Time, end time
 	return results, nil
 }
 
+func GetOptions(page int64) *options.FindOptions {
+	opts := options.Find()
+	opts.SetLimit(recordPerPage)
+	opts.SetSkip(recordPerPage * (page - 1))
+	opts.SetSort(bson.M{"timestamp": -1})
+	return opts
+}
+
 func GetRecordsByPage(db *mongo.Database, collection string, page int64) ([]MQTTRecord, error) {
-	options := options.Find()
-	options.SetLimit(recordPerPage)
-	options.SetSkip(recordPerPage * (page - 1))
+	opts := GetOptions(page)
+	// filter should not be nil
+	return GetRecords(db, collection, bson.D{}, opts)
+}
 
-	cur, err := db.Collection(collection).Find(Ctx, bson.D{}, options)
-	if err != nil {
-		lsugar.Error(err)
-		return nil, err
+func GetRecordsFrom(db *mongo.Database, collection string, start time.Time, page int64) ([]MQTTRecord, error) {
+	opts := GetOptions(page)
+	// https://stackoverflow.com/questions/54548441/composite-literal-uses-unkeyed-fields
+	filter := bson.D{
+		{"timestamp", bson.D{
+			{"$gte", start},
+		}},
 	}
+	return GetRecords(db, collection, filter, opts)
+}
 
-	var results []MQTTRecord
-	for cur.Next(Ctx) {
-		var result MQTTRecord
-		err := cur.Decode(&result)
-		if err != nil {
-			lsugar.Error(err)
-			return nil, err
-		}
-
-		results = append(results, result)
+func GetRecordsBetween(db *mongo.Database, collection string, start time.Time, end time.Time, page int64) ([]MQTTRecord, error) {
+	opts := GetOptions(page)
+	// https://stackoverflow.com/questions/54548441/composite-literal-uses-unkeyed-fields
+	filter := bson.D{
+		{"timestamp", bson.D{
+			{"$gte", start},
+			{"$lte", end},
+		}},
 	}
-
-	return results, nil
+	return GetRecords(db, collection, filter, opts)
 }
