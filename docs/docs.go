@@ -53,19 +53,19 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.ResponseMsg"
+                            "$ref": "#/definitions/controller.ResponseMsg"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/main.ErrorMsg"
+                            "$ref": "#/definitions/controller.ErrorMsg"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/main.ErrorMsg"
+                            "$ref": "#/definitions/controller.ErrorMsg"
                         }
                     }
                 }
@@ -86,7 +86,7 @@ var doc = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/main.DateRangeRequest"
+                            "$ref": "#/definitions/controller.DateRangeRequest"
                         }
                     }
                 ],
@@ -94,19 +94,19 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.ResponseMsg"
+                            "$ref": "#/definitions/controller.ResponseMsg"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/main.ErrorMsg"
+                            "$ref": "#/definitions/controller.ErrorMsg"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/main.ErrorMsg"
+                            "$ref": "#/definitions/controller.ErrorMsg"
                         }
                     }
                 }
@@ -134,19 +134,19 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.ResponseMsg"
+                            "$ref": "#/definitions/controller.ResponseMsg"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/main.ErrorMsg"
+                            "$ref": "#/definitions/controller.ErrorMsg"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/main.ErrorMsg"
+                            "$ref": "#/definitions/controller.ErrorMsg"
                         }
                     }
                 }
@@ -167,7 +167,7 @@ var doc = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/main.DateRangeRequest"
+                            "$ref": "#/definitions/controller.DateRangeRequest"
                         }
                     }
                 ],
@@ -175,19 +175,19 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.ResponseMsg"
+                            "$ref": "#/definitions/controller.ResponseMsg"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/main.ErrorMsg"
+                            "$ref": "#/definitions/controller.ErrorMsg"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/main.ErrorMsg"
+                            "$ref": "#/definitions/controller.ErrorMsg"
                         }
                     }
                 }
@@ -195,7 +195,7 @@ var doc = `{
         }
     },
     "definitions": {
-        "main.DateRangeRequest": {
+        "controller.DateRangeRequest": {
             "type": "object",
             "required": [
                 "start"
@@ -218,7 +218,7 @@ var doc = `{
                 }
             }
         },
-        "main.ErrorMsg": {
+        "controller.ErrorMsg": {
             "type": "object",
             "properties": {
                 "error": {
@@ -228,7 +228,18 @@ var doc = `{
                 }
             }
         },
-        "main.MQTTRecord": {
+        "controller.ResponseMsg": {
+            "type": "object",
+            "properties": {
+                "records": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.MQTTRecord"
+                    }
+                }
+            }
+        },
+        "model.MQTTRecord": {
             "type": "object",
             "properties": {
                 "payload": {
@@ -239,17 +250,6 @@ var doc = `{
                     "description": "Time RFC3339",
                     "type": "string",
                     "example": "2020-01-01T00:00:00Z"
-                }
-            }
-        },
-        "main.ResponseMsg": {
-            "type": "object",
-            "properties": {
-                "records": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.MQTTRecord"
-                    }
                 }
             }
         }

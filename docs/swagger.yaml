@@ -1,6 +1,6 @@
 basePath: /
 definitions:
-  main.DateRangeRequest:
+  controller.DateRangeRequest:
     properties:
       end:
         description: Time RFC3339
@@ -17,14 +17,21 @@ definitions:
     required:
     - start
     type: object
-  main.ErrorMsg:
+  controller.ErrorMsg:
     properties:
       error:
         description: Error message
         example: error message
         type: string
     type: object
-  main.MQTTRecord:
+  controller.ResponseMsg:
+    properties:
+      records:
+        items:
+          $ref: '#/definitions/model.MQTTRecord'
+        type: array
+    type: object
+  model.MQTTRecord:
     properties:
       payload:
         example: 24.23
@@ -33,13 +40,6 @@ definitions:
         description: Time RFC3339
         example: "2020-01-01T00:00:00Z"
         type: string
-    type: object
-  main.ResponseMsg:
-    properties:
-      records:
-        items:
-          $ref: '#/definitions/main.MQTTRecord'
-        type: array
     type: object
 host: localhost:8080
 info:
@@ -68,15 +68,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.ResponseMsg'
+            $ref: '#/definitions/controller.ResponseMsg'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/main.ErrorMsg'
+            $ref: '#/definitions/controller.ErrorMsg'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/main.ErrorMsg'
+            $ref: '#/definitions/controller.ErrorMsg'
       summary: Get Temperature/Humidity Records by Page
       tags:
       - MQTTRecords
@@ -88,22 +88,22 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/main.DateRangeRequest'
+          $ref: '#/definitions/controller.DateRangeRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.ResponseMsg'
+            $ref: '#/definitions/controller.ResponseMsg'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/main.ErrorMsg'
+            $ref: '#/definitions/controller.ErrorMsg'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/main.ErrorMsg'
+            $ref: '#/definitions/controller.ErrorMsg'
       summary: Get Temperature/Humidity Records by Date
       tags:
       - MQTTRecords
@@ -121,15 +121,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.ResponseMsg'
+            $ref: '#/definitions/controller.ResponseMsg'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/main.ErrorMsg'
+            $ref: '#/definitions/controller.ErrorMsg'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/main.ErrorMsg'
+            $ref: '#/definitions/controller.ErrorMsg'
       summary: Get Temperature/Humidity Records by Page
       tags:
       - MQTTRecords
@@ -141,22 +141,22 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/main.DateRangeRequest'
+          $ref: '#/definitions/controller.DateRangeRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.ResponseMsg'
+            $ref: '#/definitions/controller.ResponseMsg'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/main.ErrorMsg'
+            $ref: '#/definitions/controller.ErrorMsg'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/main.ErrorMsg'
+            $ref: '#/definitions/controller.ErrorMsg'
       summary: Get Temperature/Humidity Records by Date
       tags:
       - MQTTRecords

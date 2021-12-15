@@ -4,10 +4,8 @@ import (
 	"context"
 	"flag"
 	"net"
-	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -15,6 +13,7 @@ import (
 	_ "github.com/DrmagicE/gmqtt/persistence"
 	"github.com/DrmagicE/gmqtt/server"
 	_ "github.com/DrmagicE/gmqtt/topicalias/fifo"
+	ctrl "github.com/crosstyan/mqtt-to-ws/controller"
 	docs "github.com/crosstyan/mqtt-to-ws/docs"
 	"github.com/crosstyan/mqtt-to-ws/logger"
 	"github.com/crosstyan/mqtt-to-ws/model"
@@ -23,7 +22,6 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 const (
@@ -40,8 +38,11 @@ var (
 	mqttToDb = make(chan model.MQTTMsg)
 )
 
+// TODO: Maybe I should use a standalone subscription by MQTT client instead of using hooks
+// gMQTT hooks for imcoming MQTT Message
 var onMsgArrived server.OnMsgArrived = func(ctx context.Context, client server.Client, req *server.MsgArrivedRequest) error {
 	// spew.Dump(req)
+	// TODO: Add client ID to identify which device is sending the message
 	mqttMsg := model.MQTTMsg{
 		Topic:   string(req.Publish.TopicName),
 		Payload: string(req.Publish.Payload),
@@ -49,122 +50,6 @@ var onMsgArrived server.OnMsgArrived = func(ctx context.Context, client server.C
 	mqttToWs <- mqttMsg
 	mqttToDb <- mqttMsg
 	return nil
-}
-
-type DateRangeRequest struct {
-	// Page is from 1 to infinity
-	Page *int64 `json:"page,omitempty" example:"1"`
-	// Time RFC3339
-	Start *string `json:"start" example:"2020-01-01T00:00:00Z" validate:"required"`
-	// Time RFC3339
-	End *string `json:"end,omitempty" example:"2022-01-01T00:00:00Z"`
-}
-
-type ErrorMsg struct {
-	// Error message
-	Err string `json:"error" example:"error message"`
-}
-
-type ResponseMsg struct {
-	Records []model.MQTTRecord `json:"records"`
-}
-
-// @Summary      Get Temperature/Humidity Records by Date
-// @Description  get Temperature/Humidity by date
-// @Tags         MQTTRecords
-// @Produce      json
-// @Param        data body DateRangeRequest true "Request Body"
-// @Success      200  {object}  ResponseMsg
-// @Failure      400  {object}  ErrorMsg
-// @Failure      500  {object}  ErrorMsg
-// @Router       /temperature [post]
-// @Router       /humidity [post]
-func handleQuery(c *gin.Context, collection string, db *mongo.Database) {
-	var dateRange DateRangeRequest
-	c.BindJSON(&dateRange)
-	var page int64
-	if dateRange.Page == nil || *dateRange.Page <= 0 {
-		page = 1
-	} else {
-		page = *dateRange.Page
-	}
-	var tEnd time.Time
-	var tStart time.Time
-	tStart, err := time.Parse(time.RFC3339, *dateRange.Start)
-	if err != nil {
-		lsugar.Error(err)
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	// TODO: Refactor this part
-	if dateRange.End != nil {
-		tEnd, err = time.Parse(time.RFC3339, *dateRange.End)
-		if err != nil {
-			lsugar.Error(err)
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		records, err := model.GetRecordsBetween(db, collection, tStart, tEnd, page)
-		if err != nil {
-			lsugar.Error(err)
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		if records == nil {
-			var empty = make([]string, 0)
-			c.JSON(http.StatusOK, gin.H{"records": empty})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"records": records})
-	} else {
-		records, err := model.GetRecordsFrom(db, collection, tStart, page)
-		if err != nil {
-			lsugar.Error(err)
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		if records == nil {
-			var empty = make([]string, 0)
-			c.JSON(http.StatusOK, gin.H{"records": empty})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"records": records})
-	}
-}
-
-// @Summary      Get Temperature/Humidity Records by Page
-// @Description  get Temperature/Humidity by page
-// @Tags         MQTTRecords
-// @Produce      json
-// @Param        page query int false "From 1 to infinity"
-// @Success      200  {object}  ResponseMsg
-// @Failure      400  {object}  ErrorMsg
-// @Failure      500  {object}  ErrorMsg
-// @Router       /temperature [get]
-// @Router       /humidity [get]
-func handleQueryByPage(c *gin.Context, collection string, db *mongo.Database) {
-	pageUnparsed := c.DefaultQuery("page", "1")
-	page, err := strconv.Atoi(pageUnparsed)
-	if err != nil {
-		lsugar.Error(err.Error())
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	records, err := model.GetRecordsByPage(db, collection, int64(page))
-	if err != nil {
-		lsugar.Error(err.Error())
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	if records == nil {
-		// a trick to return empty array
-		// https://stackoverflow.com/questions/56200925/return-an-empty-array-instead-of-null-with-golang-for-json-return-with-gin
-		var empty = make([]string, 0)
-		c.JSON(http.StatusOK, gin.H{"records": empty})
-		return
-	}
-	// RFC3339 is the format of "timestamp"
-	c.JSON(http.StatusOK, gin.H{"records": records})
 }
 
 var hooks = server.Hooks{
@@ -210,71 +95,50 @@ func main() {
 	)
 
 	// handle MongoDB message
-	go func() {
-		for {
-			msg := <-mqttToDb
-			switch msg.Topic {
-			case "temperature":
-				val, err := msg.ToRecord()
-				if err != nil {
-					lsugar.Error(err)
-					break
-					// Prevent the execution of the following code
-				}
-				model.CreateRecord(db, "temperature", val)
-			case "humidity":
-				val, err := msg.ToRecord()
-				if err != nil {
-					lsugar.Error(err)
-					break
-				}
-				model.CreateRecord(db, "humidity", val)
-			default:
-				// ignore
-			}
-		}
-	}()
+	go model.HandleMqttToDb(mqttToDb, db)
 
-	// 等待中断信号以优雅地关闭服务器
-	go func() {
-		signalCh := make(chan os.Signal, 1)
-		signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
-		<-signalCh
-		s.Stop(context.Background())
-	}()
-
-	// gin server
+	// start gin server
 	go func() {
 		flag.Parse()
 		hub := utils.NewHub(mqttToWs)
 		go hub.Run()
 		// r := gin.Default()
 		r := gin.New()
+		// Config zap logger for gin
 		r.Use(ginzap.Ginzap(logger.L, time.RFC3339, true))
 		r.Use(ginzap.RecoveryWithZap(logger.L, true))
+		// WebSocket Path
 		r.GET("/ws", func(c *gin.Context) {
 			utils.ServeWs(hub, c.Writer, c.Request)
 		})
 
 		r.GET("/temperature",
 			func(c *gin.Context) {
-				handleQueryByPage(c, "temperature", db)
+				ctrl.HandleQueryByPage(c, "temperature", db)
 			})
 		r.GET("/humidity", func(c *gin.Context) {
-			handleQueryByPage(c, "humidity", db)
+			ctrl.HandleQueryByPage(c, "humidity", db)
 		})
 		r.POST("/temperature", func(c *gin.Context) {
-			handleQuery(c, "temperature", db)
+			ctrl.HandleQuery(c, "temperature", db)
 		})
 		r.POST("/humidity", func(c *gin.Context) {
-			handleQuery(c, "humidity", db)
+			ctrl.HandleQuery(c, "humidity", db)
 		})
 		// Swagger
+		// hostname:port/swagger/index.html
 		r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 		r.Run(*addr)
 	}()
 
-	// gMQTT server
+	// Waiting for stop signal from OS
+	go func() {
+		signalCh := make(chan os.Signal, 1)
+		signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
+		<-signalCh
+		s.Stop(context.Background())
+	}()
+	// start gMQTT server in main goroutine
 	err = s.Run()
 	if err != nil {
 		panic(err)
