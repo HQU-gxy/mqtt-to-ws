@@ -64,6 +64,7 @@ var hooks = server.Hooks{
 // @termsOfService  http://swagger.io/terms/
 
 // @contact.name   Crosstyan
+// @contact.url    https://github.com/crosstyan/mqtt-to-ws/
 // @contact.email  crosstyan@outlook.com
 
 // @license.name  WTFPL

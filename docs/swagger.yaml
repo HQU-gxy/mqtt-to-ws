@@ -46,6 +46,7 @@ info:
   contact:
     email: crosstyan@outlook.com
     name: Crosstyan
+    url: github.com/crosstyan/mqtt-to-ws/
   description: This is a sample server celler server.
   license:
     name: WTFPL
