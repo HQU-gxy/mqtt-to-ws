@@ -1,4 +1,4 @@
-.PHONY: all build clean run check cover lint docker help
+.PHONY: all build clean run check cover lint docker help docs
 
 BIN_FILENAME = bin
 
@@ -9,9 +9,10 @@ else
 BIN_FILE=${BIN_FILENAME}
 endif
 
-all: check build
-build:
+all: docs build
+docs:
 	@swag init
+build:
 	@go build -o "${BIN_FILE}"
 clean:
 	@go clean

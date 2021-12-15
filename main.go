@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"net"
 	"os"
 	"os/signal"
@@ -20,19 +19,14 @@ import (
 	"github.com/crosstyan/mqtt-to-ws/utils"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
+	"github.com/pborman/getopt"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-const (
-	dbHost = "127.0.0.1"
-	dbPort = "27017"
-	dbName = "mqtt"
-)
-
 // https://stackoverflow.com/questions/1714236/getopt-like-behavior-in-go
 var lsugar = logger.Lsugar
-var addr = flag.String("addr", ":8080", "http service address")
+
 var (
 	mqttToWs = make(chan model.MQTTMsg)
 	mqttToDB = make(chan model.MQTTMsg)
@@ -73,14 +67,22 @@ var hooks = server.Hooks{
 // @host      localhost:8080
 // @BasePath  /
 func main() {
-	ln, err := net.Listen("tcp", ":1883")
+	addrLocal, _ := net.InterfaceAddrs()
+	lsugar.Infof("Local IP: %v", addrLocal)
+	var addrHTTP = getopt.StringLong("addr-http", 'a', "0.0.0.0:8080", "HTTP API address")
+	var addrMQTT = getopt.StringLong("addr-mqtt", 'A', "0.0.0.0:1883", "MQTT broker address")
+	var addrSwagger = getopt.StringLong("addr-swagger", 's', "localhost:8080", "Swagger BaseURL - change this if swagger is not working")
+	var mongoDBURL = getopt.StringLong("mongo-url", 'M', "mongodb://127.0.0.1:27017/", "MongoDB connection URL")
+	var databaseName = getopt.StringLong("database", 'D', "mqtt", "Database name")
+	var websocketPath = getopt.StringLong("websocket", 'w', "/ws", "Websocket listening path")
+	getopt.Parse()
+	ln, err := net.Listen("tcp", *addrMQTT)
 	if err != nil {
 		lsugar.Fatal(err.Error())
 		return
 	}
-	docs.SwaggerInfo.Host = "localhost:8080"
-	connectionURI := "mongodb://" + dbHost + ":" + dbPort + "/"
-	db, err := model.GetDB(connectionURI, dbName)
+	docs.SwaggerInfo.Host = *addrSwagger
+	db, err := model.GetDB(*mongoDBURL, *databaseName)
 	// https://stackoverflow.com/questions/42770022/should-err-error-be-used-in-string-formatting
 	if err != nil {
 		lsugar.Fatal(err.Error())
@@ -100,7 +102,6 @@ func main() {
 
 	// start gin server
 	go func() {
-		flag.Parse()
 		hub := utils.NewWsHub(mqttToWs)
 		go hub.Run()
 		r := gin.New()
@@ -108,7 +109,7 @@ func main() {
 		r.Use(ginzap.Ginzap(logger.L, time.RFC3339, true))
 		r.Use(ginzap.RecoveryWithZap(logger.L, true))
 		// WebSocket Path
-		r.GET("/ws", func(c *gin.Context) {
+		r.GET(*websocketPath, func(c *gin.Context) {
 			utils.ServeWs(hub, c.Writer, c.Request)
 		})
 
@@ -128,7 +129,7 @@ func main() {
 		// Swagger in Gin
 		// hostname:port/swagger/index.html
 		r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-		r.Run(*addr)
+		r.Run(*addrHTTP)
 	}()
 
 	// Waiting for stop signal from OS
