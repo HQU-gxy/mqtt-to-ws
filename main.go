@@ -16,12 +16,14 @@ import (
 	"github.com/DrmagicE/gmqtt/server"
 	_ "github.com/DrmagicE/gmqtt/topicalias/fifo"
 	docs "github.com/crosstyan/mqtt-to-ws/docs"
+	"github.com/crosstyan/mqtt-to-ws/logger"
+	"github.com/crosstyan/mqtt-to-ws/model"
+	"github.com/crosstyan/mqtt-to-ws/utils"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.uber.org/zap"
 )
 
 const (
@@ -31,17 +33,16 @@ const (
 )
 
 // https://stackoverflow.com/questions/1714236/getopt-like-behavior-in-go
+var lsugar = logger.Lsugar
 var addr = flag.String("addr", ":8080", "http service address")
-var l, _ = zap.NewDevelopment()
-var lsugar = l.Sugar()
 var (
-	mqttToWs = make(chan MQTTMsg)
-	mqttToDb = make(chan MQTTMsg)
+	mqttToWs = make(chan model.MQTTMsg)
+	mqttToDb = make(chan model.MQTTMsg)
 )
 
 var onMsgArrived server.OnMsgArrived = func(ctx context.Context, client server.Client, req *server.MsgArrivedRequest) error {
 	// spew.Dump(req)
-	mqttMsg := MQTTMsg{
+	mqttMsg := model.MQTTMsg{
 		Topic:   string(req.Publish.TopicName),
 		Payload: string(req.Publish.Payload),
 	}
@@ -65,10 +66,9 @@ type ErrorMsg struct {
 }
 
 type ResponseMsg struct {
-	Records []MQTTRecord `json:"records"`
+	Records []model.MQTTRecord `json:"records"`
 }
 
-// TempExample godoc
 // @Summary      Get Temperature/Humidity Records by Date
 // @Description  get Temperature/Humidity by date
 // @Tags         MQTTRecords
@@ -104,7 +104,7 @@ func handleQuery(c *gin.Context, collection string, db *mongo.Database) {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		records, err := GetRecordsBetween(db, collection, tStart, tEnd, page)
+		records, err := model.GetRecordsBetween(db, collection, tStart, tEnd, page)
 		if err != nil {
 			lsugar.Error(err)
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -117,7 +117,7 @@ func handleQuery(c *gin.Context, collection string, db *mongo.Database) {
 		}
 		c.JSON(http.StatusOK, gin.H{"records": records})
 	} else {
-		records, err := GetRecordsFrom(db, collection, tStart, page)
+		records, err := model.GetRecordsFrom(db, collection, tStart, page)
 		if err != nil {
 			lsugar.Error(err)
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -150,7 +150,7 @@ func handleQueryByPage(c *gin.Context, collection string, db *mongo.Database) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	records, err := GetRecordsByPage(db, collection, int64(page))
+	records, err := model.GetRecordsByPage(db, collection, int64(page))
 	if err != nil {
 		lsugar.Error(err.Error())
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -194,7 +194,7 @@ func main() {
 	}
 	docs.SwaggerInfo.Host = "localhost:8080"
 	connectionURI := "mongodb://" + dbHost + ":" + dbPort + "/"
-	db, err := GetDB(connectionURI, dbName)
+	db, err := model.GetDB(connectionURI, dbName)
 	// https://stackoverflow.com/questions/42770022/should-err-error-be-used-in-string-formatting
 	if err != nil {
 		lsugar.Fatal(err.Error())
@@ -205,7 +205,7 @@ func main() {
 	s := server.New(
 		server.WithTCPListener(ln),
 		server.WithHook(hooks),
-		server.WithLogger(l),
+		server.WithLogger(logger.L),
 		server.WithConfig(config.DefaultConfig()),
 	)
 
@@ -221,14 +221,14 @@ func main() {
 					break
 					// Prevent the execution of the following code
 				}
-				CreateRecord(db, "temperature", val)
+				model.CreateRecord(db, "temperature", val)
 			case "humidity":
 				val, err := msg.ToRecord()
 				if err != nil {
 					lsugar.Error(err)
 					break
 				}
-				CreateRecord(db, "humidity", val)
+				model.CreateRecord(db, "humidity", val)
 			default:
 				// ignore
 			}
@@ -246,14 +246,14 @@ func main() {
 	// gin server
 	go func() {
 		flag.Parse()
-		hub := newHub(mqttToWs)
-		go hub.run()
+		hub := utils.NewHub(mqttToWs)
+		go hub.Run()
 		// r := gin.Default()
 		r := gin.New()
-		r.Use(ginzap.Ginzap(l, time.RFC3339, true))
-		r.Use(ginzap.RecoveryWithZap(l, true))
+		r.Use(ginzap.Ginzap(logger.L, time.RFC3339, true))
+		r.Use(ginzap.RecoveryWithZap(logger.L, true))
 		r.GET("/ws", func(c *gin.Context) {
-			serveWs(hub, c.Writer, c.Request)
+			utils.ServeWs(hub, c.Writer, c.Request)
 		})
 
 		r.GET("/temperature",

@@ -1,17 +1,19 @@
-package main
+package model
 
 import (
 	"context"
 	"strconv"
 	"time"
 
+	"github.com/crosstyan/mqtt-to-ws/logger"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var (
-	Ctx = context.TODO()
+	Ctx    = context.TODO()
+	lsugar = logger.Lsugar
 )
 
 const (
