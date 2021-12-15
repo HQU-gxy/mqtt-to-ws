@@ -69,12 +69,16 @@ var hooks = server.Hooks{
 func main() {
 	addrLocal, _ := net.InterfaceAddrs()
 	lsugar.Infof("Local IP: %v", addrLocal)
-	var addrHTTP = getopt.StringLong("addr-http", 'a', "0.0.0.0:8080", "HTTP API address")
-	var addrMQTT = getopt.StringLong("addr-mqtt", 'A', "0.0.0.0:1883", "MQTT broker address")
-	var addrSwagger = getopt.StringLong("addr-swagger", 's', "localhost:8080", "Swagger BaseURL - change this if swagger is not working")
-	var mongoDBURL = getopt.StringLong("mongo-url", 'M', "mongodb://127.0.0.1:27017/", "MongoDB connection URL")
-	var databaseName = getopt.StringLong("database", 'D', "mqtt", "Database name")
-	var websocketPath = getopt.StringLong("websocket", 'w', "/ws", "Websocket listening path")
+	var addrHTTP = getopt.StringLong("addr-http", 'a', "0.0.0.0:8080", "HTTP API address", "addr:port")
+	var addrMQTT = getopt.StringLong("addr-mqtt", 'A', "0.0.0.0:1883", "MQTT broker address", "addr:port")
+	var addrSwagger = getopt.StringLong("addr-swagger", 's', "localhost:8080",
+		"Swagger BaseURL -- change this if swagger is not working correctly",
+		"addr:port")
+	var mongoDBURL = getopt.StringLong("mongo-url", 'M', "mongodb://127.0.0.1:27017/",
+		"MongoDB connection URL\nmongodb://[username:password@]host1[:port1][,...hostN[:portN]][/[defaultauthdb][?options]]",
+		"url")
+	var databaseName = getopt.StringLong("database", 'D', "mqtt", "Database name", "database")
+	var websocketPath = getopt.StringLong("websocket", 'w', "/ws", "Websocket listening path -- default '/ws'", "path")
 	getopt.Parse()
 	ln, err := net.Listen("tcp", *addrMQTT)
 	if err != nil {
