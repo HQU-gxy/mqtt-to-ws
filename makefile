@@ -1,10 +1,12 @@
 .PHONY: all build clean run check cover lint docker help
 
+BIN_FILENAME = bin
+
 # https://stackoverflow.com/questions/4058840/makefile-that-distinguishes-between-windows-and-unix-like-systems
 ifeq ($(OS),Windows_NT)
-BIN_FILE=bin.exe
+BIN_FILE=${BIN_FILENAME}.exe
 else
-BIN_FILE=bin
+BIN_FILE=${BIN_FILENAME}
 endif
 
 all: check build
@@ -16,7 +18,7 @@ clean:
 check:
 	@go fmt ./
 	@go vet ./
-run:
+run: build
 	./"${BIN_FILE}"
 lint:
 	golangci-lint run --enable-all
