@@ -19,9 +19,8 @@ var doc = `{
         "title": "{{.Title}}",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
-            "name": "API Support",
-            "url": "http://www.swagger.io/support",
-            "email": "support@swagger.io"
+            "name": "Crosstyan",
+            "email": "crosstyan@outlook.com"
         },
         "license": {
             "name": "WTFPL",
@@ -31,10 +30,228 @@ var doc = `{
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
-    "paths": {},
-    "securityDefinitions": {
-        "BasicAuth": {
-            "type": "basic"
+    "paths": {
+        "/humidity": {
+            "get": {
+                "description": "get Temperature/Humidity by page",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MQTTRecords"
+                ],
+                "summary": "Get Temperature/Humidity Records by Page",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "From 1 to infinity",
+                        "name": "page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.ResponseMsg"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorMsg"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorMsg"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "get Temperature/Humidity by date",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MQTTRecords"
+                ],
+                "summary": "Get Temperature/Humidity Records by Date",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/main.DateRangeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.ResponseMsg"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorMsg"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorMsg"
+                        }
+                    }
+                }
+            }
+        },
+        "/temperature": {
+            "get": {
+                "description": "get Temperature/Humidity by page",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MQTTRecords"
+                ],
+                "summary": "Get Temperature/Humidity Records by Page",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "From 1 to infinity",
+                        "name": "page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.ResponseMsg"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorMsg"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorMsg"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "get Temperature/Humidity by date",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MQTTRecords"
+                ],
+                "summary": "Get Temperature/Humidity Records by Date",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/main.DateRangeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.ResponseMsg"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorMsg"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorMsg"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "main.DateRangeRequest": {
+            "type": "object",
+            "required": [
+                "start"
+            ],
+            "properties": {
+                "end": {
+                    "description": "Time RFC3339",
+                    "type": "string",
+                    "example": "2022-01-01T00:00:00Z"
+                },
+                "page": {
+                    "description": "Page is from 1 to infinity",
+                    "type": "integer",
+                    "example": 1
+                },
+                "start": {
+                    "description": "Time RFC3339",
+                    "type": "string",
+                    "example": "2020-01-01T00:00:00Z"
+                }
+            }
+        },
+        "main.ErrorMsg": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "description": "Error message",
+                    "type": "string",
+                    "example": "error message"
+                }
+            }
+        },
+        "main.MQTTRecord": {
+            "type": "object",
+            "properties": {
+                "payload": {
+                    "type": "number",
+                    "example": 24.23
+                },
+                "timestamp": {
+                    "description": "Time RFC3339",
+                    "type": "string",
+                    "example": "2020-01-01T00:00:00Z"
+                }
+            }
+        },
+        "main.ResponseMsg": {
+            "type": "object",
+            "properties": {
+                "records": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.MQTTRecord"
+                    }
+                }
+            }
         }
     }
 }`
@@ -50,7 +267,7 @@ type swaggerInfo struct {
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = swaggerInfo{
-	Version:     "1.0",
+	Version:     "0.1",
 	Host:        "localhost:8080",
 	BasePath:    "/",
 	Schemes:     []string{},

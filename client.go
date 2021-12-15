@@ -34,6 +34,12 @@ var (
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
+	// https://github.com/gorilla/websocket/issues/367
+	// solve upgrade:websocket
+	// request origin not allowed by Upgrader.CheckOrigin
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
 }
 
 // Client is a middleman between the websocket connection and the hub.

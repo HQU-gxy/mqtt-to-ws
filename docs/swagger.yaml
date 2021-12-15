@@ -1,19 +1,163 @@
 basePath: /
+definitions:
+  main.DateRangeRequest:
+    properties:
+      end:
+        description: Time RFC3339
+        example: "2022-01-01T00:00:00Z"
+        type: string
+      page:
+        description: Page is from 1 to infinity
+        example: 1
+        type: integer
+      start:
+        description: Time RFC3339
+        example: "2020-01-01T00:00:00Z"
+        type: string
+    required:
+    - start
+    type: object
+  main.ErrorMsg:
+    properties:
+      error:
+        description: Error message
+        example: error message
+        type: string
+    type: object
+  main.MQTTRecord:
+    properties:
+      payload:
+        example: 24.23
+        type: number
+      timestamp:
+        description: Time RFC3339
+        example: "2020-01-01T00:00:00Z"
+        type: string
+    type: object
+  main.ResponseMsg:
+    properties:
+      records:
+        items:
+          $ref: '#/definitions/main.MQTTRecord'
+        type: array
+    type: object
 host: localhost:8080
 info:
   contact:
-    email: support@swagger.io
-    name: API Support
-    url: http://www.swagger.io/support
+    email: crosstyan@outlook.com
+    name: Crosstyan
   description: This is a sample server celler server.
   license:
     name: WTFPL
     url: http://www.wtfpl.net/
   termsOfService: http://swagger.io/terms/
   title: Swagger Example API
-  version: "1.0"
-paths: {}
-securityDefinitions:
-  BasicAuth:
-    type: basic
+  version: "0.1"
+paths:
+  /humidity:
+    get:
+      description: get Temperature/Humidity by page
+      parameters:
+      - description: From 1 to infinity
+        in: query
+        name: page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.ResponseMsg'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorMsg'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorMsg'
+      summary: Get Temperature/Humidity Records by Page
+      tags:
+      - MQTTRecords
+    post:
+      description: get Temperature/Humidity by date
+      parameters:
+      - description: Request Body
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/main.DateRangeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.ResponseMsg'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorMsg'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorMsg'
+      summary: Get Temperature/Humidity Records by Date
+      tags:
+      - MQTTRecords
+  /temperature:
+    get:
+      description: get Temperature/Humidity by page
+      parameters:
+      - description: From 1 to infinity
+        in: query
+        name: page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.ResponseMsg'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorMsg'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorMsg'
+      summary: Get Temperature/Humidity Records by Page
+      tags:
+      - MQTTRecords
+    post:
+      description: get Temperature/Humidity by date
+      parameters:
+      - description: Request Body
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/main.DateRangeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.ResponseMsg'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorMsg'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorMsg'
+      summary: Get Temperature/Humidity Records by Date
+      tags:
+      - MQTTRecords
 swagger: "2.0"

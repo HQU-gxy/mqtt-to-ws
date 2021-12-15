@@ -19,8 +19,8 @@ const (
 )
 
 type MQTTMsg struct {
-	Topic   string `json:"topic"`
-	Payload string `json:"payload"`
+	Topic   string `json:"topic" example:"temperature"`
+	Payload string `json:"payload" example:"23.5"`
 }
 
 func (m *MQTTMsg) ToRecord() (MQTTRecord, error) {
@@ -32,8 +32,9 @@ func (m *MQTTMsg) ToRecord() (MQTTRecord, error) {
 }
 
 type MQTTRecord struct {
-	Payload   float64   `bson:"payload" json:"payload"`
-	Timestamp time.Time `bson:"timestamp" json:"timestamp"`
+	Payload float64 `bson:"payload" json:"payload" example:"24.23"`
+	// Time RFC3339
+	Timestamp time.Time `bson:"timestamp" json:"timestamp" example:"2020-01-01T00:00:00Z"`
 }
 
 func GetDB(uri string, db string) (*mongo.Database, error) {

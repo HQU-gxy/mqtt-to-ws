@@ -51,11 +51,34 @@ var onMsgArrived server.OnMsgArrived = func(ctx context.Context, client server.C
 }
 
 type DateRangeRequest struct {
-	Page  *int64  `json:"page"`
-	Start *string `json:"start"`
-	End   *string `json:"end,omitempty"`
+	// Page is from 1 to infinity
+	Page *int64 `json:"page,omitempty" example:"1"`
+	// Time RFC3339
+	Start *string `json:"start" example:"2020-01-01T00:00:00Z" validate:"required"`
+	// Time RFC3339
+	End *string `json:"end,omitempty" example:"2022-01-01T00:00:00Z"`
 }
 
+type ErrorMsg struct {
+	// Error message
+	Err string `json:"error" example:"error message"`
+}
+
+type ResponseMsg struct {
+	Records []MQTTRecord `json:"records"`
+}
+
+// TempExample godoc
+// @Summary      Get Temperature/Humidity Records by Date
+// @Description  get Temperature/Humidity by date
+// @Tags         MQTTRecords
+// @Produce      json
+// @Param        data body DateRangeRequest true "Request Body"
+// @Success      200  {object}  ResponseMsg
+// @Failure      400  {object}  ErrorMsg
+// @Failure      500  {object}  ErrorMsg
+// @Router       /temperature [post]
+// @Router       /humidity [post]
 func handleQuery(c *gin.Context, collection string, db *mongo.Database) {
 	var dateRange DateRangeRequest
 	c.BindJSON(&dateRange)
@@ -109,6 +132,16 @@ func handleQuery(c *gin.Context, collection string, db *mongo.Database) {
 	}
 }
 
+// @Summary      Get Temperature/Humidity Records by Page
+// @Description  get Temperature/Humidity by page
+// @Tags         MQTTRecords
+// @Produce      json
+// @Param        page query int false "From 1 to infinity"
+// @Success      200  {object}  ResponseMsg
+// @Failure      400  {object}  ErrorMsg
+// @Failure      500  {object}  ErrorMsg
+// @Router       /temperature [get]
+// @Router       /humidity [get]
 func handleQueryByPage(c *gin.Context, collection string, db *mongo.Database) {
 	pageUnparsed := c.DefaultQuery("page", "1")
 	page, err := strconv.Atoi(pageUnparsed)
@@ -138,29 +171,28 @@ var hooks = server.Hooks{
 	OnMsgArrived: onMsgArrived,
 }
 
+// the swagger package used is https://github.com/swaggo/swag
+// instead of https://github.com/go-swagger/go-swagger
 // @title           Swagger Example API
-// @version         1.0
+// @version         0.1
 // @description     This is a sample server celler server.
 // @termsOfService  http://swagger.io/terms/
 
-// @contact.name   API Support
-// @contact.url    http://www.swagger.io/support
-// @contact.email  support@swagger.io
+// @contact.name   Crosstyan
+// @contact.email  crosstyan@outlook.com
 
 // @license.name  WTFPL
 // @license.url   http://www.wtfpl.net/
 
 // @host      localhost:8080
 // @BasePath  /
-
-// @securityDefinitions.basic  BasicAuth
 func main() {
 	ln, err := net.Listen("tcp", ":1883")
 	if err != nil {
 		lsugar.Fatal(err.Error())
 		return
 	}
-	docs.SwaggerInfo.Host = *addr
+	docs.SwaggerInfo.Host = "localhost:8080"
 	connectionURI := "mongodb://" + dbHost + ":" + dbPort + "/"
 	db, err := GetDB(connectionURI, dbName)
 	// https://stackoverflow.com/questions/42770022/should-err-error-be-used-in-string-formatting
@@ -203,7 +235,6 @@ func main() {
 		}
 	}()
 
-	// I have totally no idea what this is for
 	// 等待中断信号以优雅地关闭服务器
 	go func() {
 		signalCh := make(chan os.Signal, 1)
@@ -225,9 +256,10 @@ func main() {
 			serveWs(hub, c.Writer, c.Request)
 		})
 
-		r.GET("/temperature", func(c *gin.Context) {
-			handleQueryByPage(c, "temperature", db)
-		})
+		r.GET("/temperature",
+			func(c *gin.Context) {
+				handleQueryByPage(c, "temperature", db)
+			})
 		r.GET("/humidity", func(c *gin.Context) {
 			handleQueryByPage(c, "humidity", db)
 		})
@@ -237,6 +269,7 @@ func main() {
 		r.POST("/humidity", func(c *gin.Context) {
 			handleQuery(c, "humidity", db)
 		})
+		// Swagger
 		r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 		r.Run(*addr)
 	}()
