@@ -35,7 +35,7 @@ var lsugar = logger.Lsugar
 var addr = flag.String("addr", ":8080", "http service address")
 var (
 	mqttToWs = make(chan model.MQTTMsg)
-	mqttToDb = make(chan model.MQTTMsg)
+	mqttToDB = make(chan model.MQTTMsg)
 )
 
 // TODO: Maybe I should use a standalone subscription by MQTT client instead of using hooks
@@ -48,7 +48,7 @@ var onMsgArrived server.OnMsgArrived = func(ctx context.Context, client server.C
 		Payload: string(req.Publish.Payload),
 	}
 	mqttToWs <- mqttMsg
-	mqttToDb <- mqttMsg
+	mqttToDB <- mqttMsg
 	return nil
 }
 
@@ -96,7 +96,7 @@ func main() {
 	)
 
 	// handle MongoDB message
-	go model.HandleMqttToDb(mqttToDb, db)
+	go model.HandleMqttToDb(mqttToDB, db)
 
 	// start gin server
 	go func() {
