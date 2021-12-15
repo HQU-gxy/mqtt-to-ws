@@ -85,10 +85,10 @@ linters:
     - whitespace
     - asciicheck
     - scopelint
-    - gochecknoglobals
+    # - gochecknoglobals
     - gocognit
-    - godot
-    - godox
+    # - godot
+    # - godox
     - goerr113
     - interfacer
     - maligned

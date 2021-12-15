@@ -32,7 +32,7 @@ type Hub struct {
 	mqttToWs chan model.MQTTMsg
 }
 
-func NewHub(mqttToWs chan model.MQTTMsg) *Hub {
+func NewWsHub(mqttToWs chan model.MQTTMsg) *Hub {
 	return &Hub{
 		broadcast:  make(chan []byte),
 		register:   make(chan *Client),

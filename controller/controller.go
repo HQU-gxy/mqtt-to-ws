@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	// Required by gMQTT
 	_ "github.com/DrmagicE/gmqtt/persistence"
 	_ "github.com/DrmagicE/gmqtt/topicalias/fifo"
 	"github.com/crosstyan/mqtt-to-ws/logger"
@@ -45,7 +46,12 @@ type ResponseMsg struct {
 // @Router       /humidity [post]
 func HandleQuery(c *gin.Context, collection string, db *mongo.Database) {
 	var dateRange DateRangeRequest
-	c.BindJSON(&dateRange)
+	err := c.BindJSON(&dateRange)
+	if err != nil {
+		lsugar.Error(err.Error())
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 	var page int64
 	if dateRange.Page == nil || *dateRange.Page <= 0 {
 		page = 1
@@ -54,7 +60,7 @@ func HandleQuery(c *gin.Context, collection string, db *mongo.Database) {
 	}
 	var tEnd time.Time
 	var tStart time.Time
-	tStart, err := time.Parse(time.RFC3339, *dateRange.Start)
+	tStart, err = time.Parse(time.RFC3339, *dateRange.Start)
 	if err != nil {
 		lsugar.Error(err)
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})

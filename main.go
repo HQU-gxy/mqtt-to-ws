@@ -96,14 +96,13 @@ func main() {
 	)
 
 	// handle MongoDB message
-	go model.HandleMqttToDb(mqttToDB, db)
+	go model.HandleMQTTtoDB(mqttToDB, db)
 
 	// start gin server
 	go func() {
 		flag.Parse()
-		hub := utils.NewHub(mqttToWs)
+		hub := utils.NewWsHub(mqttToWs)
 		go hub.Run()
-		// r := gin.Default()
 		r := gin.New()
 		// Config zap logger for gin
 		r.Use(ginzap.Ginzap(logger.L, time.RFC3339, true))
@@ -126,7 +125,7 @@ func main() {
 		r.POST("/humidity", func(c *gin.Context) {
 			ctrl.HandleQuery(c, "humidity", db)
 		})
-		// Swagger
+		// Swagger in Gin
 		// hostname:port/swagger/index.html
 		r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 		r.Run(*addr)

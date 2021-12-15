@@ -124,7 +124,7 @@ func GetRecordsBetween(db *mongo.Database, collection string, start time.Time, e
 	return GetRecords(db, collection, filter, opts)
 }
 
-func HandleMqttToDb(mqttToDb chan MQTTMsg, db *mongo.Database) {
+func HandleMQTTtoDB(mqttToDb chan MQTTMsg, db *mongo.Database) {
 	for {
 		msg := <-mqttToDb
 		switch msg.Topic {
