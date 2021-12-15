@@ -2,8 +2,8 @@
 
 Todo:
 
-- makefile
-- config file
-- swagger documention
-- refactor (split main into multiple files)
-- unit tests
+- [x] makefile
+- [ ] config file
+- [x] swagger documention
+- [x] refactor (split main into multiple files)
+- [ ] unit tests
