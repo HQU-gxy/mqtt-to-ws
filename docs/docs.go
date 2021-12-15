@@ -20,7 +20,7 @@ var doc = `{
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
             "name": "Crosstyan",
-            "url": "github.com/crosstyan/mqtt-to-ws/",
+            "url": "https://github.com/crosstyan/mqtt-to-ws/",
             "email": "crosstyan@outlook.com"
         },
         "license": {
