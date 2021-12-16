@@ -2,13 +2,17 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package main
+package utils
 
 import (
 	"encoding/json"
 
+	"github.com/crosstyan/mqtt-to-ws/logger"
+	"github.com/crosstyan/mqtt-to-ws/model"
 	"github.com/davecgh/go-spew/spew"
 )
+
+var lsugar = logger.Lsugar
 
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
@@ -25,10 +29,10 @@ type Hub struct {
 	// Unregister requests from clients.
 	unregister chan *Client
 
-	mqttToWs chan MQTTMsg
+	mqttToWs chan model.MQTTMsg
 }
 
-func newHub(mqttToWs chan MQTTMsg) *Hub {
+func NewWsHub(mqttToWs chan model.MQTTMsg) *Hub {
 	return &Hub{
 		broadcast:  make(chan []byte),
 		register:   make(chan *Client),
@@ -38,7 +42,7 @@ func newHub(mqttToWs chan MQTTMsg) *Hub {
 	}
 }
 
-func (h *Hub) run() {
+func (h *Hub) Run() {
 	for {
 		select {
 		case client := <-h.register:
