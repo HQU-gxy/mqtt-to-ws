@@ -5,16 +5,13 @@ import (
 	"strconv"
 	"time"
 
-	// Required by gMQTT
-	_ "github.com/DrmagicE/gmqtt/persistence"
-	_ "github.com/DrmagicE/gmqtt/topicalias/fifo"
-	"github.com/crosstyan/mqtt-to-ws/logger"
+	l "github.com/crosstyan/mqtt-to-ws/logger"
 	"github.com/crosstyan/mqtt-to-ws/model"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-var lsugar = logger.Lsugar
+var logger = l.Lsugar
 
 type DateRangeRequest struct {
 	// Page is from 1 to infinity
@@ -48,7 +45,7 @@ func HandleQuery(c *gin.Context, collection string, db *mongo.Database) {
 	var dateRange DateRangeRequest
 	err := c.BindJSON(&dateRange)
 	if err != nil {
-		lsugar.Error(err.Error())
+		logger.Error(err.Error())
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -62,7 +59,7 @@ func HandleQuery(c *gin.Context, collection string, db *mongo.Database) {
 	var tStart time.Time
 	tStart, err = time.Parse(time.RFC3339, *dateRange.Start)
 	if err != nil {
-		lsugar.Error(err)
+		logger.Error(err)
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -70,13 +67,13 @@ func HandleQuery(c *gin.Context, collection string, db *mongo.Database) {
 	if dateRange.End != nil {
 		tEnd, err = time.Parse(time.RFC3339, *dateRange.End)
 		if err != nil {
-			lsugar.Error(err)
+			logger.Error(err)
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 		records, err := model.GetRecordsBetween(db, collection, tStart, tEnd, page)
 		if err != nil {
-			lsugar.Error(err)
+			logger.Error(err)
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
@@ -89,7 +86,7 @@ func HandleQuery(c *gin.Context, collection string, db *mongo.Database) {
 	} else {
 		records, err := model.GetRecordsFrom(db, collection, tStart, page)
 		if err != nil {
-			lsugar.Error(err)
+			logger.Error(err)
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
@@ -116,13 +113,13 @@ func HandleQueryByPage(c *gin.Context, collection string, db *mongo.Database) {
 	pageUnparsed := c.DefaultQuery("page", "1")
 	page, err := strconv.Atoi(pageUnparsed)
 	if err != nil {
-		lsugar.Error(err.Error())
+		logger.Error(err.Error())
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	records, err := model.GetRecordsByPage(db, collection, int64(page))
 	if err != nil {
-		lsugar.Error(err.Error())
+		logger.Error(err.Error())
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

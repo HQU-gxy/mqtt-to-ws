@@ -14,7 +14,7 @@ import (
 	_ "github.com/DrmagicE/gmqtt/topicalias/fifo"
 	ctrl "github.com/crosstyan/mqtt-to-ws/controller"
 	docs "github.com/crosstyan/mqtt-to-ws/docs"
-	"github.com/crosstyan/mqtt-to-ws/logger"
+	l "github.com/crosstyan/mqtt-to-ws/logger"
 	"github.com/crosstyan/mqtt-to-ws/model"
 	"github.com/crosstyan/mqtt-to-ws/utils"
 	ginzap "github.com/gin-contrib/zap"
@@ -25,7 +25,7 @@ import (
 )
 
 // https://stackoverflow.com/questions/1714236/getopt-like-behavior-in-go
-var lsugar = logger.Lsugar
+var logger = l.Lsugar
 
 var (
 	mqttToWs = make(chan model.MQTTMsg)
@@ -68,7 +68,7 @@ var hooks = server.Hooks{
 // @BasePath  /
 func main() {
 	addrLocal, _ := net.InterfaceAddrs()
-	lsugar.Infof("Local IP: %v", addrLocal)
+	logger.Infof("Local IP: %v", addrLocal)
 	var addrHTTP = getopt.StringLong("addr-http", 'a', "0.0.0.0:8080", "HTTP API address", "addr:port")
 	var addrMQTT = getopt.StringLong("addr-mqtt", 'A', "0.0.0.0:1883", "MQTT broker address", "addr:port")
 	var addrSwagger = getopt.StringLong("addr-swagger", 's', "localhost:8080",
@@ -82,14 +82,14 @@ func main() {
 	getopt.Parse()
 	ln, err := net.Listen("tcp", *addrMQTT)
 	if err != nil {
-		lsugar.Fatal(err.Error())
+		logger.Fatal(err.Error())
 		return
 	}
 	docs.SwaggerInfo.Host = *addrSwagger
 	db, err := model.GetDB(*mongoDBURL, *databaseName)
 	// https://stackoverflow.com/questions/42770022/should-err-error-be-used-in-string-formatting
 	if err != nil {
-		lsugar.Fatal(err.Error())
+		logger.Fatal(err.Error())
 		return
 	}
 
@@ -97,7 +97,7 @@ func main() {
 	s := server.New(
 		server.WithTCPListener(ln),
 		server.WithHook(hooks),
-		server.WithLogger(logger.L),
+		server.WithLogger(l.L),
 		server.WithConfig(config.DefaultConfig()),
 	)
 
@@ -110,8 +110,8 @@ func main() {
 		go hub.Run()
 		r := gin.New()
 		// Config zap logger for gin
-		r.Use(ginzap.Ginzap(logger.L, time.RFC3339, true))
-		r.Use(ginzap.RecoveryWithZap(logger.L, true))
+		r.Use(ginzap.Ginzap(l.L, time.RFC3339, true))
+		r.Use(ginzap.RecoveryWithZap(l.L, true))
 		// WebSocket Path
 		r.GET(*websocketPath, func(c *gin.Context) {
 			utils.ServeWs(hub, c.Writer, c.Request)

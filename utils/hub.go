@@ -7,12 +7,12 @@ package utils
 import (
 	"encoding/json"
 
-	"github.com/crosstyan/mqtt-to-ws/logger"
+	l "github.com/crosstyan/mqtt-to-ws/logger"
 	"github.com/crosstyan/mqtt-to-ws/model"
 	"github.com/davecgh/go-spew/spew"
 )
 
-var lsugar = logger.Lsugar
+var logger = l.Lsugar
 
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
@@ -64,10 +64,10 @@ func (h *Hub) Run() {
 		// 		}
 		// 	}
 		case message := <-h.mqttToWs:
-			lsugar.Infof("Message from MQTT:\n%s", spew.Sdump(message))
+			logger.Infof("Message from MQTT:\n%s", spew.Sdump(message))
 			marshaled, err := json.Marshal(message)
 			if err != nil {
-				lsugar.Warnf("Error marshaling message: %v", err)
+				logger.Errorf("Error marshaling message: %v", err)
 			}
 			for client := range h.clients {
 				select {
