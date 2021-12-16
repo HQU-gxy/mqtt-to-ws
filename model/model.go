@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/crosstyan/mqtt-to-ws/logger"
+	l "github.com/crosstyan/mqtt-to-ws/logger"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -13,7 +13,7 @@ import (
 
 var (
 	Ctx    = context.TODO()
-	lsugar = logger.Lsugar
+	logger = l.Lsugar
 )
 
 const (
@@ -43,13 +43,13 @@ func GetDB(uri string, db string) (*mongo.Database, error) {
 	clientOptions := options.Client().ApplyURI(uri)
 	client, err := mongo.Connect(Ctx, clientOptions)
 	if err != nil {
-		lsugar.Error(err)
+		logger.Error(err)
 		return nil, err
 	}
 
 	err = client.Ping(Ctx, nil)
 	if err != nil {
-		lsugar.Error(err)
+		logger.Error(err)
 		return nil, err
 	}
 
@@ -59,7 +59,7 @@ func GetDB(uri string, db string) (*mongo.Database, error) {
 func CreateRecord(db *mongo.Database, collection string, data MQTTRecord) error {
 	_, err := db.Collection(collection).InsertOne(Ctx, data)
 	if err != nil {
-		lsugar.Error(err)
+		logger.Error(err)
 	}
 
 	return err
@@ -68,7 +68,7 @@ func CreateRecord(db *mongo.Database, collection string, data MQTTRecord) error 
 func GetRecords(db *mongo.Database, collection string, filter interface{}, opts *options.FindOptions) ([]MQTTRecord, error) {
 	cur, err := db.Collection(collection).Find(Ctx, filter, opts)
 	if err != nil {
-		lsugar.Error(err)
+		logger.Error(err)
 		return nil, err
 	}
 
@@ -77,7 +77,7 @@ func GetRecords(db *mongo.Database, collection string, filter interface{}, opts 
 		var result MQTTRecord
 		err := cur.Decode(&result)
 		if err != nil {
-			lsugar.Error(err)
+			logger.Error(err)
 			return nil, err
 		}
 
@@ -131,7 +131,7 @@ func HandleMQTTtoDB(mqttToDb chan MQTTMsg, db *mongo.Database) {
 		case "temperature":
 			val, err := msg.ToRecord()
 			if err != nil {
-				lsugar.Error(err)
+				logger.Error(err)
 				break
 				// Prevent the execution of the following code
 			}
@@ -139,7 +139,7 @@ func HandleMQTTtoDB(mqttToDb chan MQTTMsg, db *mongo.Database) {
 		case "humidity":
 			val, err := msg.ToRecord()
 			if err != nil {
-				lsugar.Error(err)
+				logger.Error(err)
 				break
 			}
 			CreateRecord(db, "humidity", val)
