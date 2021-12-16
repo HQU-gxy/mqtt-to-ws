@@ -67,8 +67,8 @@ var hooks = server.Hooks{
 // @host      localhost:8080
 // @BasePath  /
 func main() {
-	addrLocal, _ := net.InterfaceAddrs()
-	logger.Infof("Local IP: %v", addrLocal)
+	// addrLocal, _ := net.InterfaceAddrs()
+	// logger.Infof("Local IP: %v", addrLocal)
 	var addrHTTP = getopt.StringLong("addr-http", 'a', "0.0.0.0:8080", "HTTP API address", "addr:port")
 	var addrMQTT = getopt.StringLong("addr-mqtt", 'A', "0.0.0.0:1883", "MQTT broker address", "addr:port")
 	var addrSwagger = getopt.StringLong("addr-swagger", 's', "localhost:8080",
