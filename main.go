@@ -20,6 +20,7 @@ import (
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
 	"github.com/pborman/getopt"
+	cors "github.com/rs/cors/wrapper/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
@@ -67,8 +68,8 @@ var hooks = server.Hooks{
 // @host      localhost:8080
 // @BasePath  /
 func main() {
-	addrLocal, _ := net.InterfaceAddrs()
-	logger.Infof("Local IP: %v", addrLocal)
+	// addrLocal, _ := net.InterfaceAddrs()
+	// logger.Infof("Local IP: %v", addrLocal)
 	var addrHTTP = getopt.StringLong("addr-http", 'a', "0.0.0.0:8080", "HTTP API address", "addr:port")
 	var addrMQTT = getopt.StringLong("addr-mqtt", 'A', "0.0.0.0:1883", "MQTT broker address", "addr:port")
 	var addrSwagger = getopt.StringLong("addr-swagger", 's', "localhost:8080",
@@ -112,6 +113,7 @@ func main() {
 		// Config zap logger for gin
 		r.Use(ginzap.Ginzap(l.L, time.RFC3339, true))
 		r.Use(ginzap.RecoveryWithZap(l.L, true))
+		r.Use(cors.Default())
 		// WebSocket Path
 		r.GET(*websocketPath, func(c *gin.Context) {
 			utils.ServeWs(hub, c.Writer, c.Request)
