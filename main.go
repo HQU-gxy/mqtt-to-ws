@@ -20,6 +20,7 @@ import (
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
 	"github.com/pborman/getopt"
+	cors "github.com/rs/cors/wrapper/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
@@ -112,6 +113,7 @@ func main() {
 		// Config zap logger for gin
 		r.Use(ginzap.Ginzap(l.L, time.RFC3339, true))
 		r.Use(ginzap.RecoveryWithZap(l.L, true))
+		r.Use(cors.Default())
 		// WebSocket Path
 		r.GET(*websocketPath, func(c *gin.Context) {
 			utils.ServeWs(hub, c.Writer, c.Request)
