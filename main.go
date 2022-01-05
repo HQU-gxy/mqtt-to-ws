@@ -34,7 +34,7 @@ var (
 )
 
 // TODO: Maybe I should use a standalone subscription by MQTT client instead of using hooks
-// gMQTT hooks for imcoming MQTT Message
+// gMQTT hooks for incoming MQTT Message
 var onMsgArrived server.OnMsgArrived = func(ctx context.Context, client server.Client, req *server.MsgArrivedRequest) error {
 	// spew.Dump(req)
 	// TODO: Add client ID to identify which device is sending the message

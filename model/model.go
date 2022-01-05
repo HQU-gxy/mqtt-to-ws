@@ -87,22 +87,26 @@ func GetRecords(db *mongo.Database, collection string, filter interface{}, opts 
 	return results, nil
 }
 
-func GetOptions(page int64) *options.FindOptions {
+func GetOptions(page int64, isDescend bool) *options.FindOptions {
 	opts := options.Find()
 	opts.SetLimit(recordPerPage)
 	opts.SetSkip(recordPerPage * (page - 1))
-	opts.SetSort(bson.M{"timestamp": -1})
+	if isDescend {
+		opts.SetSort(bson.M{"timestamp": -1})
+	} else {
+		opts.SetSort(bson.M{"timestamp": 1})
+	}
 	return opts
 }
 
 func GetRecordsByPage(db *mongo.Database, collection string, page int64) ([]MQTTRecord, error) {
-	opts := GetOptions(page)
+	opts := GetOptions(page, true)
 	// filter should not be nil
 	return GetRecords(db, collection, bson.D{}, opts)
 }
 
-func GetRecordsFrom(db *mongo.Database, collection string, start time.Time, page int64) ([]MQTTRecord, error) {
-	opts := GetOptions(page)
+func GetRecordsFrom(db *mongo.Database, collection string, start time.Time, page int64, isDescend bool) ([]MQTTRecord, error) {
+	opts := GetOptions(page, isDescend)
 	// https://stackoverflow.com/questions/54548441/composite-literal-uses-unkeyed-fields
 	filter := bson.D{
 		{"timestamp", bson.D{
@@ -112,8 +116,8 @@ func GetRecordsFrom(db *mongo.Database, collection string, start time.Time, page
 	return GetRecords(db, collection, filter, opts)
 }
 
-func GetRecordsBetween(db *mongo.Database, collection string, start time.Time, end time.Time, page int64) ([]MQTTRecord, error) {
-	opts := GetOptions(page)
+func GetRecordsBetween(db *mongo.Database, collection string, start time.Time, end time.Time, page int64, isDescend bool) ([]MQTTRecord, error) {
+	opts := GetOptions(page, isDescend)
 	// https://stackoverflow.com/questions/54548441/composite-literal-uses-unkeyed-fields
 	filter := bson.D{
 		{"timestamp", bson.D{

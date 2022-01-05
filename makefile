@@ -1,6 +1,6 @@
 .PHONY: all build clean run check cover lint docker help docs
 
-BIN_FILENAME = bin
+BIN_FILENAME = mqtt_to_ws
 
 # https://stackoverflow.com/questions/4058840/makefile-that-distinguishes-between-windows-and-unix-like-systems
 ifeq ($(OS),Windows_NT)
