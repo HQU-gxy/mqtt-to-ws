@@ -196,12 +196,32 @@ var doc = `{
         }
     },
     "definitions": {
+        "controller.Chain33Info": {
+            "type": "object",
+            "properties": {
+                "priv_key": {
+                    "type": "string",
+                    "example": "cc38546e9e659d15e6b4893f0ab32a06d103931a8230b0bde71459d2b27d6944"
+                },
+                "url": {
+                    "type": "string",
+                    "example": "http://127.0.0.1:8801"
+                }
+            }
+        },
         "controller.DateRangeRequest": {
             "type": "object",
             "required": [
                 "start"
             ],
             "properties": {
+                "chain": {
+                    "$ref": "#/definitions/controller.Chain33Info"
+                },
+                "descend": {
+                    "type": "boolean",
+                    "example": true
+                },
                 "end": {
                     "description": "Time RFC3339",
                     "type": "string",

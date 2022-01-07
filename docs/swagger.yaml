@@ -1,7 +1,21 @@
 basePath: /
 definitions:
+  controller.Chain33Info:
+    properties:
+      priv_key:
+        example: cc38546e9e659d15e6b4893f0ab32a06d103931a8230b0bde71459d2b27d6944
+        type: string
+      url:
+        example: http://127.0.0.1:8801
+        type: string
+    type: object
   controller.DateRangeRequest:
     properties:
+      chain:
+        $ref: '#/definitions/controller.Chain33Info'
+      descend:
+        example: true
+        type: boolean
       end:
         description: Time RFC3339
         example: "2022-01-01T00:00:00Z"
